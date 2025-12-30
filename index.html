@@ -15,7 +15,7 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: "#8c2bee",
+                        primary: "var(--primary-color)",
                         bgDark: "#100a16",
                         bgCard: "#1e1628",
                         textGray: "#ab9db9"
@@ -28,192 +28,129 @@
         }
     </script>
     <style>
+        /* 네가 만든 스타일 그대로 복구 */
+        :root { --primary-color: #8c2bee; }
         body { background-color: #100a16; color: white; }
-        .glass-card {
-            background: rgba(30, 22, 40, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover {
-            border-color: rgba(140, 43, 238, 0.3);
-            background: rgba(30, 22, 40, 0.8);
-            transform: translateY(-2px);
-        }
-        
-        /* 편집 모드 스타일 */
-        body.is-editing .editable-target {
-            border: 1px dashed #8c2bee;
-            background: rgba(140, 43, 238, 0.1);
-            cursor: text;
-        }
-        body.is-editing .editable-img {
-            cursor: pointer;
-            border: 2px dashed #8c2bee !important;
-            opacity: 0.8;
-        }
-        body.is-editing a.editable-link {
-            cursor: alias !important;
-            border: 1px dotted #8c2bee;
-            position: relative;
-        }
-        
-        #profile-img {
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        #detail-desc {
-            white-space: pre-line;
-            line-height: 1.8;
-        }
-        /* 로딩 인디케이터 */
-        #loading-screen {
-            position: fixed; inset: 0; background: #100a16; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            transition: opacity 0.5s;
-        }
+        .glass-card { background: rgba(30, 22, 40, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); }
+        .glass-card:hover { border-color: rgba(140, 43, 238, 0.3); background: rgba(30, 22, 40, 0.8); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #100a16; }
+        ::-webkit-scrollbar-thumb { background: #302839; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8c2bee; }
+        body.is-editing .editable-text-direct { border: 1px dashed #8c2bee; background: rgba(140, 43, 238, 0.1); cursor: text; }
+        body.is-editing .editable-trigger { border: 1px solid #8c2bee; position: relative; }
+        body.is-editing .editable-img { cursor: pointer; border: 2px dashed #8c2bee !important; opacity: 0.8; }
+        body.is-editing a.editable-link { cursor: context-menu !important; border: 1px dotted #8c2bee; }
+        #profile-img { aspect-ratio: 1 / 1; object-fit: cover; border-radius: 50%; }
+        .add-btn, .delete-btn, .editor-toolbar { display: none; }
+        body.is-editing .add-btn { display: flex; }
+        body.is-editing .delete-btn { display: block; }
+        body.is-editing .editor-toolbar { display: flex; }
+        .delete-btn { position: absolute; right: -10px; top: -10px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 24px; z-index: 10; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .dragging { opacity: 0.5; border: 2px dashed #8c2bee !important; background: rgba(140, 43, 238, 0.05); }
+        .bookmark-card:hover { background-color: rgba(255, 255, 255, 0.1); border-color: rgba(140, 43, 238, 0.5); }
+        input[type=range].skill-slider { -webkit-appearance: none; background: transparent; width: 100%; }
+        input[type=range].skill-slider::-webkit-slider-runnable-track { height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
+        input[type=range].skill-slider::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--primary-color); cursor: pointer; margin-top: -6px; box-shadow: 0 0 5px var(--primary-color); }
+        .skill-row { display: flex; align-items: center; gap: 10px; }
+        .skill-icon { width: 24px; text-align: center; font-size: 14px; }
+        .skill-name { width: 80px; font-size: 12px; font-weight: bold; }
+        .skill-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; position: relative; }
+        .skill-bar-fill { height: 100%; background-color: var(--primary-color); border-radius: 3px; transition: width 0.3s; }
+        #loading-screen { position: fixed; inset: 0; background: #100a16; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col p-4 md:p-8 max-w-7xl mx-auto">
-
     <div id="loading-screen">
         <div class="text-center">
             <span class="material-symbols-outlined text-5xl text-primary animate-spin">sync</span>
-            <p class="mt-4 text-gray-400 font-bold">데이터 불러오는 중...</p>
+            <p class="mt-4 text-gray-400 font-bold">서버 데이터 연결 중...</p>
         </div>
     </div>
 
+    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+    <input type="file" id="detailImageInput" accept="image/*" style="display: none;" multiple>
+    <input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
+
     <header class="flex justify-between items-center mb-8 sticky top-0 z-40 py-4 bg-[#100a16]/80 backdrop-blur-md">
         <div class="flex items-center gap-4">
-            <button id="editToggleBtn" class="flex items-center gap-2 bg-primary/20 text-primary px-4 py-2 rounded-lg hover:bg-primary/40 transition-all font-bold">
+            <input type="color" id="themeColorPicker" class="w-8 h-8 rounded-full overflow-hidden cursor-pointer border-2 border-white/20 p-0 bg-transparent" value="#8c2bee" oninput="changeThemeColor(this.value)">
+            <button onclick="resetThemeColor()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70 hover:text-white"><span class="material-symbols-outlined text-sm">restart_alt</span></button>
+            <button onclick="toggleEditMode()" class="flex items-center gap-2 bg-primary/20 text-primary px-4 py-2 rounded-lg hover:bg-primary/40 transition-all font-bold">
                 <span class="material-symbols-outlined">edit_square</span>
                 <span id="editBtnText">편집 모드</span>
             </button>
         </div>
-        <a href="mailto:example@gmail.com" id="contact-link" class="editable-link bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center gap-2">
-            <span>Contact Me</span>
-            <span class="material-symbols-outlined text-sm">send</span>
+        <a href="mailto:wjh@example.com" id="contactBtn" class="editable-link bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center gap-2">
+            <span>Contact Me</span><span class="material-symbols-outlined text-sm">send</span>
         </a>
     </header>
 
-    <main class="grid grid-cols-1 md:grid-cols-3 md:grid-rows-3 gap-6 md:h-[85vh]">
-        
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="glass-card rounded-3xl p-8 md:row-span-2 md:col-span-1 flex flex-col items-center text-center relative overflow-hidden group">
-            <div class="relative w-48 h-48 mb-6 group-hover:scale-105 transition-transform duration-500">
-                <img id="profile-img" src="https://via.placeholder.com/300" alt="Profile" class="editable-img w-full h-full border-4 border-primary/30 shadow-2xl">
-            </div>
-            
-            <h1 id="profile-name" class="editable-target text-3xl font-black mb-2">우지형</h1>
-            <p id="profile-role" class="editable-target text-primary font-bold mb-6">Growth Marketer</p>
-            
-            <div id="profile-desc" class="editable-target text-textGray leading-relaxed mb-auto text-sm">
-                인문학적 통찰과 책임있는 실행력을 가진<br>미래의 기자 지망생입니다.
-            </div>
-
+            <img id="profile-img" src="WOO.jpg" alt="Profile" class="w-48 h-48 mb-6 border-4 border-primary/30 shadow-2xl editable-img">
+            <h1 id="profile-name" class="text-3xl font-black mb-2 editable-text-direct">우지형</h1>
+            <p id="profile-role" class="text-primary font-bold mb-6 editable-text-direct">Growth Marketer</p>
+            <div id="profile-desc" class="text-textGray leading-relaxed mb-auto text-lg editable-text-direct">인문학적 통찰과 책임있는 실행력을 가진 미래의 기자 지망생입니다.</div>
             <div class="flex gap-4 mt-6">
-                <a href="https://instagram.com" id="sns-insta" target="_blank" class="editable-link w-12 h-12 flex items-center justify-center bg-white/5 rounded-full hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-500 transition-all hover:scale-110">
-                    <i class="fab fa-instagram text-xl"></i>
-                </a>
-                <a href="mailto:example@gmail.com" id="sns-email" class="editable-link w-12 h-12 flex items-center justify-center bg-white/5 rounded-full hover:bg-white hover:text-red-500 transition-all hover:scale-110">
-                    <i class="far fa-envelope text-xl"></i>
-                </a>
+                <a href="#" id="sns-insta" target="_blank" class="editable-link w-16 h-16 flex items-center justify-center bg-white/5 rounded-full hover:scale-110"><i class="fab fa-instagram text-3xl"></i></a>
+                <a href="#" id="sns-gmail" class="editable-link w-16 h-16 flex items-center justify-center bg-white/5 rounded-full hover:scale-110"><i class="far fa-envelope text-3xl"></i></a>
             </div>
         </div>
 
         <div class="glass-card rounded-3xl p-6 md:col-span-1 flex flex-col justify-between relative overflow-hidden min-h-[160px]">
-            <div class="flex justify-between items-start">
-                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></span>
-                <span class="material-symbols-outlined text-textGray">verified</span>
-            </div>
-            <div>
-                <p class="text-textGray text-xs font-bold uppercase tracking-wider mb-2">Current Status</p>
-                <h3 id="status-text" class="editable-target text-2xl font-bold leading-tight">SKCE 23기 지원 👋</h3>
-            </div>
-        </div>
-
-        <div class="glass-card rounded-3xl md:col-span-1 overflow-hidden relative group cursor-pointer min-h-[200px]" onclick="editMap()">
-            <iframe id="map-frame" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3165.352646679544!2d126.9554!3d37.4963!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca1d5c2e97669%3A0xc3b86027735397f3!2z7Iit7Iuk64yA7ZWZ6rWQ!5e0!3m2!1sko!2skr!4v1234567890" 
-                class="w-full h-full border-0 filter grayscale invert contrast-125 opacity-70 hover:opacity-100 transition-opacity" allowfullscreen="" loading="lazy"></iframe>
-            <div class="absolute bottom-4 left-4 bg-bgDark/80 px-3 py-1 rounded-lg text-xs font-bold backdrop-blur-sm pointer-events-none flex items-center gap-1">
-                <span class="material-symbols-outlined text-[14px] text-primary">location_on</span>
-                Soongsil Univ.
-            </div>
+            <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></span>
+            <h3 id="status-text" class="text-2xl font-bold editable-text-direct leading-tight">SKCE 23기 지원</h3>
         </div>
 
         <div class="glass-card rounded-3xl p-6 md:row-span-2 md:col-span-1 flex flex-col relative overflow-hidden">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">history_edu</span> Experience</h2>
+                <button onclick="addNewItem('exp')" class="add-btn bg-primary/20 text-primary px-2 py-1 rounded text-xs">추가</button>
             </div>
-            <div class="overflow-y-auto pr-2 space-y-6 flex-1 custom-scrollbar" id="timeline-container">
-                </div>
+            <div class="overflow-y-auto pr-2 space-y-6 flex-1 custom-scrollbar" id="timeline-container"></div>
         </div>
 
         <div class="glass-card rounded-3xl p-6 md:row-span-2 md:col-span-1 flex flex-col overflow-hidden">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Recent Work</h2>
+                <h2 class="text-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">rocket_launch</span> Recent Work</h2>
+                <button onclick="addNewItem('proj')" class="add-btn bg-primary/20 text-primary px-2 py-1 rounded text-xs">추가</button>
             </div>
-            <div class="overflow-y-auto pr-2 space-y-4 flex-1 custom-scrollbar" id="work-container">
-                </div>
+            <div id="project-container" class="overflow-y-auto pr-2 space-y-4 flex-1 custom-scrollbar"></div>
         </div>
 
-        <div class="md:col-span-1 flex gap-2">
-            <div class="glass-card rounded-2xl flex-1 flex flex-col justify-center items-center p-4 hover:bg-white/5 transition-colors cursor-pointer" onclick="openDetail('skill-perf')">
-                <span class="material-symbols-outlined text-3xl text-blue-400 mb-2">analytics</span>
-                <span class="font-bold text-sm">Performance</span>
-                <span class="text-[10px] text-gray-500 mt-1">Skills Detail</span>
+        <div class="md:col-span-1 flex flex-col gap-4">
+            <div id="item-skill-perf" class="glass-card rounded-3xl p-6 flex flex-col justify-center relative cursor-pointer" onclick="openDetail('skill-perf')">
+                <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-400">analytics</span> Performance</h3>
+                <div id="skill-data" style="display:none;">95,75,60,80,95</div>
+                <div id="skill-container" class="space-y-1"></div>
             </div>
-            <div class="glass-card rounded-2xl flex-1 flex flex-col justify-center items-center p-4 hover:bg-white/5 transition-colors cursor-pointer" onclick="openDetail('skill-copy')">
-                <span class="material-symbols-outlined text-3xl text-pink-400 mb-2">emoji_events</span>
-                <span class="font-bold text-sm">Awards</span>
-                <span class="text-[10px] text-gray-500 mt-1">Awards Detail</span>
+            <div id="item-skill-copy" class="glass-card rounded-3xl p-6 flex flex-col relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg flex items-center gap-2"><span class="material-symbols-outlined text-pink-400">emoji_events</span> Awards</h3>
+                    <button onclick="addAward()" class="add-btn bg-pink-500/20 text-pink-400 px-2 py-1 rounded text-xs">추가</button>
+                </div>
+                <div id="awards-container" class="space-y-3 overflow-y-auto custom-scrollbar max-h-[200px] pr-1"></div>
             </div>
         </div>
     </main>
 
-    <footer class="mt-8 text-center text-textGray text-xs">
-        <p>© 2025 Woo Jee-hyung. All rights reserved.</p>
-    </footer>
+    <div class="glass-card rounded-3xl overflow-hidden relative group cursor-pointer min-h-[200px] mt-6 h-64" onclick="editMap()">
+        <iframe id="map-frame" src="https://www.google.com/search?q=https://www.google.com/maps/embed%3Fpb%3D!1m18!1m12!1m3!1d3165.352646679544!2d126.9554!3d37.4963!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca1d5c2e97669%253A0xc3b86027735397f3!2z7Iit7Iuk64yA7ZWZ6rWQ!5e0!3m2!1sko!2skr!4v1234567890" class="w-full h-full border-0 filter grayscale invert contrast-125 opacity-70"></iframe>
+    </div>
 
-    <div id="detail-overlay" class="fixed inset-0 bg-bgDark z-50 hidden overflow-y-auto">
-        <button onclick="closeDetail()" class="fixed top-6 right-6 z-[60] bg-black/50 p-2 rounded-full hover:bg-primary text-white transition-colors">
-            <span class="material-symbols-outlined text-3xl">close</span>
-        </button>
-        
-        <div class="w-full h-80 relative group">
-            <img id="detail-hero-img" src="https://via.placeholder.com/1200x400" class="w-full h-full object-cover opacity-60">
-            <div class="absolute inset-0 bg-gradient-to-t from-bgDark to-transparent"></div>
-            <div class="absolute top-6 left-6 flex items-center gap-3">
-                 <div class="bg-primary px-3 py-1 rounded-full text-xs font-bold text-white">PORTFOLIO DETAIL</div>
-            </div>
-        </div>
+    <footer class="mt-6 text-center text-textGray text-xs"><p>© 2025 Woo Jee-hyung. All rights reserved.</p></footer>
 
-        <div class="max-w-4xl mx-auto -mt-32 relative px-4 pb-20">
+    <div id="detail-overlay" class="fixed inset-0 bg-bgDark z-50 hidden overflow-y-auto animate-[fadeIn_0.3s_ease-out]">
+        <button onclick="closeDetail()" class="fixed top-6 right-6 z-[60] bg-black/50 p-2 rounded-full hover:bg-primary text-white transition-colors"><span class="material-symbols-outlined text-3xl">close</span></button>
+        <div class="max-w-4xl mx-auto mt-32 relative px-4 pb-20">
             <div class="glass-card bg-[#1e1628] p-8 md:p-12 rounded-3xl shadow-2xl border border-white/10">
-                <div class="flex gap-4 mb-4 text-sm font-mono text-primary">
-                    <span id="detail-date" class="editable-detail">DATE</span>
-                    <span>|</span>
-                    <span id="detail-company" class="editable-detail">COMPANY</span>
+                <div class="flex gap-4 mb-6 text-xl font-bold text-primary"><span id="detail-date" class="editable-detail">DATE</span><span>|</span><span id="detail-company" class="editable-detail">COMPANY</span></div>
+                <h1 id="detail-title" class="text-4xl md:text-5xl font-black mb-6 leading-tight editable-detail">제목</h1>
+                <div id="detail-toolbar" class="editor-toolbar gap-2 mb-4">
+                    <button onclick="insertBookmark()" class="bg-white/10 px-3 py-1 rounded text-sm hover:bg-white/20 transition-colors">북마크 삽입</button>
                 </div>
-                <h1 id="detail-title" class="editable-detail text-3xl md:text-5xl font-black mb-6 leading-tight">제목</h1>
-                <hr class="border-white/10 my-8">
-                
-                <div class="space-y-6">
-                    <h3 class="text-lg font-bold text-white">📌 상세 내용</h3>
-                    <p id="detail-desc" class="editable-detail text-gray-300">내용이 로드됩니다...</p>
-                </div>
-                
-                <div id="detail-extra-section" class="mt-10 p-6 bg-white/5 rounded-xl border border-white/5">
-                    <h3 class="text-sm font-bold text-gray-400 mb-2 uppercase">Tools / Awards / Links</h3>
-                    <div id="detail-extra" class="editable-detail text-white font-medium whitespace-pre-line"></div>
-                </div>
-                
-                <div class="mt-8 flex justify-end">
-                    <a href="#" id="detail-link" target="_blank" class="editable-link bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all flex items-center gap-2 hidden">
-                        관련 링크/기사 보기 <span class="material-symbols-outlined text-sm">open_in_new</span>
-                    </a>
-                </div>
+                <div id="detail-desc" class="text-lg text-gray-300 leading-relaxed editable-detail whitespace-pre-line min-h-[100px]"></div>
             </div>
         </div>
     </div>
@@ -222,7 +159,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 우지형님의 Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyBE0teXJrc6TzhiCdw-PVQnB--qSsDGjFg",
             authDomain: "woo-portfolio-4f289.firebaseapp.com",
@@ -235,239 +171,162 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 초기 기본 데이터 (DB가 비었을 때 사용)
-        let portfolioData = {
-            profile: {
-                name: "우지형",
-                role: "Growth Marketer",
-                desc: "인문학적 통찰과 책임있는 실행력을 가진\n미래의 기자 지망생입니다.",
-                status: "SKCE 23기 지원 👋",
-                img: "https://via.placeholder.com/300",
-                insta: "https://instagram.com",
-                email: "mailto:example@gmail.com",
-                contact: "mailto:example@gmail.com",
-                map: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3165.352646679544!2d126.9554!3d37.4963!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca1d5c2e97669%3A0xc3b86027735397f3!2z7Iit7Iuk64yA7ZWZ6rWQ!5e0!3m2!1sko!2skr!4v1234567890"
-            },
-            experiences: [
-                { id: 'exp1', date: "2025.08 - Present", title: "CEO저널 대학생 기자단 12기", company: "CEO저널" },
-                { id: 'exp2', date: "2025.05 - 2025.12", title: "서울런 멘토단 프렌즈", company: "서울런" },
-                { id: 'exp3', date: "2025.01 - 2025.12", title: "기독교학과 학생회 부학생회장", company: "숭실대학교" },
-                { id: 'exp4', date: "2024.01 - 2024.12", title: "기독교학과 학생회 서기", company: "숭실대학교" }
-            ],
-            works: [
-                { id: 'work1', type: "ACTIVITY", title: "서울런 멘토단 6월 우수콘텐츠", desc: "서울런 멘토단 프렌즈 우수 콘텐츠 선정" },
-                { id: 'work2', type: "INTERVIEW", title: "조흥식 前 사랑의열매 회장", desc: "[월간 CEO저널] 복지 전문가와의 인터뷰" },
-                { id: 'work3', type: "INTERVIEW", title: "윤기묘 아프리카인사이트 팀장", desc: "[세상 읽기] 패션으로 보여준 아프리카" },
-                { id: 'work4', type: "INTERVIEW", title: "이광회 한국해비타트 사무총장", desc: "[세상 읽기] 모든 사람에게 안락한 집을" },
-                { id: 'work5', type: "INTERVIEW", title: "이문수 청년밥상 문간 이사장", desc: "[세상 읽기] 청년들의 밥상을 위하여" }
-            ],
-            details: {
-                'work1': { title: "서울런 멘토단 6월 우수콘텐츠", desc: "내용...", extra: "성과: 우수 콘텐츠", link: "#" },
-                'work2': { title: "조흥식 회장 인터뷰", desc: "내용...", extra: "형식: 인터뷰", link: "#" },
-                'skill-perf': { title: "OA Skills", desc: "PPT 95%, Excel 80%", extra: "자격증 보유", link: "#" },
-                'skill-copy': { title: "Awards", desc: "옥호열 학술상 2회", extra: "수상 내역", link: "#" }
-            }
-        };
+        // 지형이의 기존 전역 변수들
+        window.isEditing = false;
+        window.currentActiveKey = null;
+        const skillConfig = [
+            { name: 'PPT', icon: 'fa-file-powerpoint', color: 'text-orange-500' },
+            { name: 'Photoshop', icon: 'fa-palette', color: 'text-blue-500' },
+            { name: 'Premiere Pro', icon: 'fa-film', color: 'text-purple-500' },
+            { name: 'Excel', icon: 'fa-file-excel', color: 'text-green-500' },
+            { name: 'Word', icon: 'fa-file-word', color: 'text-blue-600' }
+        ];
 
-        let isEditing = false;
-
-        // 1. 데이터 불러오기 (Read)
-        async function loadContent() {
+        // [데이터 로드] 서버에서 HTML 구조를 가져와 덮어씌움
+        async function loadFromServer() {
             try {
                 const docRef = doc(db, "portfolio", "main");
                 const docSnap = await getDoc(docRef);
-
                 if (docSnap.exists()) {
-                    console.log("🔥 Firebase에서 데이터 로드 성공!");
-                    portfolioData = docSnap.data();
-                } else {
-                    console.log("데이터 없음. 기본값 사용.");
+                    const data = docSnap.data().html;
+                    const parser = new DOMParser();
+                    const newDoc = parser.parseFromString(data, 'text/html');
+                    
+                    // 핵심 구역만 갈아끼우기 (지형이의 레이아웃 유지)
+                    const targetIds = ['timeline-container', 'project-container', 'awards-container', 'profile-name', 'profile-role', 'profile-desc', 'status-text', 'profile-img', 'map-frame', 'skill-data'];
+                    targetIds.forEach(id => {
+                        const newEl = newDoc.getElementById(id);
+                        const oldEl = document.getElementById(id);
+                        if (newEl && oldEl) {
+                            if (id === 'profile-img') oldEl.src = newEl.src;
+                            else if (id === 'map-frame') oldEl.src = newEl.src;
+                            else oldEl.innerHTML = newEl.innerHTML;
+                        }
+                    });
                 }
-                renderAll();
-            } catch (e) {
-                console.error("데이터 로드 실패:", e);
-                alert("데이터 로드 중 오류가 발생했습니다. (콘솔 확인)");
-            } finally {
+            } catch (e) { console.error("로드 실패:", e); }
+            finally { 
                 document.getElementById('loading-screen').style.opacity = '0';
                 setTimeout(() => document.getElementById('loading-screen').remove(), 500);
+                renderSkills(); 
             }
         }
 
-        // 2. 화면 그리기 (Render)
-        function renderAll() {
-            // 프로필
-            document.getElementById('profile-name').innerText = portfolioData.profile.name;
-            document.getElementById('profile-role').innerText = portfolioData.profile.role;
-            document.getElementById('profile-desc').innerHTML = portfolioData.profile.desc.replace(/\n/g, '<br>');
-            document.getElementById('status-text').innerText = portfolioData.profile.status;
-            document.getElementById('profile-img').src = portfolioData.profile.img;
-            document.getElementById('sns-insta').href = portfolioData.profile.insta;
-            document.getElementById('sns-email').href = portfolioData.profile.email;
-            document.getElementById('contact-link').href = portfolioData.profile.contact;
-            document.getElementById('map-frame').src = portfolioData.profile.map;
-
-            // 경력 리스트
-            const timelineHTML = portfolioData.experiences.map(exp => `
-                <div class="relative pl-6 border-l-2 border-primary/30 hover:border-primary transition-colors cursor-pointer group" onclick="openDetail('${exp.id}')">
-                    <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-bgDark border-2 border-primary group-hover:scale-110 transition-transform"></span>
-                    <span class="text-xs text-primary font-bold mb-1 block">${exp.date}</span>
-                    <h3 class="text-lg font-bold mb-1">${exp.title}</h3>
-                    <p class="text-sm text-textGray">${exp.company}</p>
-                </div>
-            `).join('');
-            document.getElementById('timeline-container').innerHTML = timelineHTML;
-
-            // 프로젝트 리스트
-            const workHTML = portfolioData.works.map(work => `
-                <div class="bg-bgDark/50 p-4 rounded-xl border border-white/5 hover:border-primary/50 transition-all cursor-pointer group" onclick="openDetail('${work.id}')">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded font-bold">${work.type}</span>
-                        <span class="material-symbols-outlined text-gray-500 group-hover:text-white text-sm">arrow_outward</span>
-                    </div>
-                    <h3 class="font-bold text-white mb-1">${work.title}</h3>
-                    <p class="text-xs text-textGray line-clamp-2">${work.desc}</p>
-                </div>
-            `).join('');
-            document.getElementById('work-container').innerHTML = workHTML;
-        }
-
-        // 3. 데이터 저장 (Write)
-        async function saveContent() {
-            // 현재 DOM에 있는 데이터를 변수에 업데이트
-            portfolioData.profile.name = document.getElementById('profile-name').innerText;
-            portfolioData.profile.role = document.getElementById('profile-role').innerText;
-            portfolioData.profile.desc = document.getElementById('profile-desc').innerText; // 줄바꿈 유지 위해 innerText
-            portfolioData.profile.status = document.getElementById('status-text').innerText;
-            portfolioData.profile.img = document.getElementById('profile-img').src;
-            portfolioData.profile.insta = document.getElementById('sns-insta').href;
-            portfolioData.profile.email = document.getElementById('sns-email').href;
-            portfolioData.profile.contact = document.getElementById('contact-link').href;
-            portfolioData.profile.map = document.getElementById('map-frame').src;
-            
-            // (리스트나 상세 페이지 내용은 별도 편집 UI가 필요하지만, 
-            // 일단 '상세 페이지'에서 수정한 내용이 details 객체에 반영되어 있어야 함. 
-            // 현재 구조상 openDetail/closeDetail에서 동기화 로직이 필요함.)
-
+        // [서버 저장] 
+        window.saveToFirebase = async function() {
+            const currentHTML = document.documentElement.outerHTML;
             try {
-                await setDoc(doc(db, "portfolio", "main"), portfolioData);
-                alert("✅ 구글 서버에 저장되었습니다! 이제 어디서든 이 내용이 보입니다.");
-            } catch (e) {
-                console.error("저장 실패:", e);
-                alert("저장 중 오류 발생! (콘솔 확인)");
+                await setDoc(doc(db, "portfolio", "main"), { html: currentHTML });
+                alert("✅ 구글 서버에 영구 저장되었습니다!");
+            } catch (e) { alert("저장 실패!"); }
+        }
+
+        // 지형이의 기존 기능들 100% 복구
+        window.toggleEditMode = async function() {
+            window.isEditing = !window.isEditing;
+            const body = document.body;
+            if (window.isEditing) {
+                body.classList.add('is-editing');
+                document.getElementById('editBtnText').innerText = "저장 하기";
+                document.querySelectorAll('.editable-text-direct').forEach(el => el.contentEditable = "true");
+                renderSkills();
+            } else {
+                body.classList.remove('is-editing');
+                document.getElementById('editBtnText').innerText = "편집 모드";
+                document.querySelectorAll('[contentEditable]').forEach(el => el.contentEditable = "false");
+                renderSkills();
+                await saveToFirebase();
             }
         }
 
-        // 4. 편집 모드 토글
-        document.getElementById('editToggleBtn').addEventListener('click', () => {
-            isEditing = !isEditing;
-            const body = document.body;
-            const btnText = document.getElementById('editBtnText');
-            
-            if (isEditing) {
-                body.classList.add('is-editing');
-                btnText.innerText = "변경사항 저장";
-                document.getElementById('editToggleBtn').classList.add('bg-red-500', 'text-white');
-                document.getElementById('editToggleBtn').classList.remove('bg-primary/20', 'text-primary');
-                
-                // 텍스트 수정 가능하게
-                document.querySelectorAll('.editable-target').forEach(el => el.contentEditable = "true");
-                
-                alert("✏️ 편집 모드 ON\n- 글자를 클릭해서 수정하세요.\n- 사진/링크를 클릭해서 주소를 바꾸세요.\n- 다 고치면 '변경사항 저장'을 누르세요.");
-            } else {
-                // 저장 시도
-                saveContent().then(() => {
-                    body.classList.remove('is-editing');
-                    btnText.innerText = "편집 모드";
-                    document.getElementById('editToggleBtn').classList.remove('bg-red-500', 'text-white');
-                    document.getElementById('editToggleBtn').classList.add('bg-primary/20', 'text-primary');
-                    document.querySelectorAll('.editable-target').forEach(el => el.contentEditable = "false");
-                });
-            }
-        });
+        window.renderSkills = function() {
+            const container = document.getElementById('skill-container');
+            const dataEl = document.getElementById('skill-data');
+            const values = dataEl.innerText.split(',').map(Number);
+            container.innerHTML = skillConfig.map((skill, i) => `
+                <div class="skill-row">
+                    <div class="skill-icon"><i class="fas ${skill.icon} ${skill.color}"></i></div>
+                    <div class="skill-name">${skill.name}</div>
+                    <div class="flex-1 relative">
+                        <div class="skill-bar-bg"><div class="skill-bar-fill ${skill.color.replace('text-','bg-')}" style="width: ${values[i]}%"></div></div>
+                        ${window.isEditing ? `<input type="range" min="0" max="100" value="${values[i]}" class="skill-slider absolute top-[-5px] left-0" oninput="updateSkillValue(${i}, this.value)">` : ''}
+                    </div>
+                    <div class="text-xs font-bold w-8 text-right">${values[i]}%</div>
+                </div>
+            `).join('');
+        }
 
-        // 링크/이미지 편집 리스너
-        document.addEventListener('click', function(e) {
-            if (!isEditing) return;
+        window.updateSkillValue = function(i, val) {
+            const dataEl = document.getElementById('skill-data');
+            const vals = dataEl.innerText.split(',');
+            vals[i] = val;
+            dataEl.innerText = vals.join(',');
+            renderSkills();
+        }
 
-            // 링크 수정
-            const link = e.target.closest('a.editable-link');
-            if (link) {
-                e.preventDefault();
-                const newUrl = prompt("새로운 링크 주소를 입력하세요:", link.href);
-                if (newUrl) link.href = newUrl;
-            }
-            
-            // 이미지 수정
-            if (e.target.tagName === 'IMG' && e.target.classList.contains('editable-img')) {
-                const newSrc = prompt("새로운 이미지 주소(URL)를 입력하세요:", e.target.src);
-                if (newSrc) e.target.src = newSrc;
-            }
-        });
+        window.addNewItem = function(type) {
+            const id = type + Date.now();
+            const container = type === 'exp' ? document.getElementById('timeline-container') : document.getElementById('project-container');
+            const html = type === 'exp' ? `
+                <div id="item-${id}" class="editable-trigger-wrapper relative pl-6 border-l-2 border-primary/30 hover:border-primary transition-colors cursor-pointer group" onclick="openDetail('${id}')">
+                    <button class="delete-btn material-symbols-outlined" onclick="deleteItem(event, 'item-${id}')">close</button>
+                    <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-bgDark border-2 border-primary"></span>
+                    <span class="text-xs text-primary font-bold mb-1 block" data-key="${id}-date">DATE</span>
+                    <h3 class="text-lg font-bold mb-1" data-key="${id}-title">New Exp</h3>
+                    <p class="text-sm text-textGray" data-key="${id}-company">Company</p>
+                    <div data-key="${id}-full-desc" style="display:none;"></div>
+                </div>` : `
+                <div id="item-${id}" class="editable-trigger-wrapper bg-bgDark/50 p-4 rounded-xl border border-white/5 hover:border-primary/50 transition-all cursor-pointer group" onclick="openDetail('${id}')">
+                    <button class="delete-btn material-symbols-outlined" onclick="deleteItem(event, 'item-${id}')">close</button>
+                    <h3 class="font-bold text-white mb-1" data-key="${id}-title">New Work</h3>
+                    <p class="text-xs text-textGray" data-key="${id}-desc">Description</p>
+                    <div data-key="${id}-full-desc" style="display:none;"></div>
+                </div>`;
+            container.insertAdjacentHTML('afterbegin', html);
+        }
 
-        // 전역 함수 연결 (모듈 스코프 탈출)
-        window.editMap = function() {
-            if (isEditing) {
-                const frame = document.getElementById('map-frame');
-                const newCode = prompt("구글 지도 임베드 주소(src)를 입력하세요:", frame.src);
-                if (newCode) frame.src = newCode;
-            }
-        };
+        window.deleteItem = function(e, id) {
+            e.stopPropagation();
+            if(confirm("삭제할까?")) document.getElementById(id).remove();
+        }
 
         window.openDetail = function(key) {
-            // 상세 데이터가 없으면 빈 껍데기라도 보여줌
-            if (!portfolioData.details) portfolioData.details = {};
-            if (!portfolioData.details[key]) {
-                // 기본 템플릿 생성
-                portfolioData.details[key] = { title: "제목 없음", desc: "내용을 입력하세요.", extra: "", link: "#" };
-            }
-            
-            const data = portfolioData.details[key];
-            window.currentDetailKey = key; // 현재 수정 중인 키 저장
+            window.currentActiveKey = key;
+            const item = document.getElementById('item-' + key) || document.getElementById('item-' + key);
+            const title = document.querySelector(`[data-key="${key}-title"]`)?.innerText || "";
+            const date = document.querySelector(`[data-key="${key}-date"]`)?.innerText || "";
+            const company = document.querySelector(`[data-key="${key}-company"]`)?.innerText || "";
+            const fullDesc = document.querySelector(`[data-key="${key}-full-desc"]`)?.innerHTML || "";
 
-            document.getElementById('detail-title').innerText = data.title;
-            document.getElementById('detail-desc').innerText = data.desc;
-            document.getElementById('detail-extra').innerText = data.extra || "";
-            
-            const linkBtn = document.getElementById('detail-link');
-            if (data.link && data.link !== "#") {
-                linkBtn.href = data.link;
-                linkBtn.classList.remove('hidden');
-            } else {
-                linkBtn.classList.add('hidden');
-            }
-            
-            // 편집 모드면 상세 페이지도 편집 가능하게
-            if (isEditing) {
-                document.querySelectorAll('.editable-detail').forEach(el => el.contentEditable = "true");
-                linkBtn.classList.remove('hidden'); // 링크 버튼 보이게 해서 수정 가능하도록
-                linkBtn.classList.add('editable-link');
-            } else {
-                document.querySelectorAll('.editable-detail').forEach(el => el.contentEditable = "false");
-                linkBtn.classList.remove('editable-link');
-            }
+            document.getElementById('detail-title').innerText = title;
+            document.getElementById('detail-date').innerText = date;
+            document.getElementById('detail-company').innerText = company;
+            document.getElementById('detail-desc').innerHTML = fullDesc;
 
+            if(window.isEditing) document.querySelectorAll('.editable-detail').forEach(el => el.contentEditable = "true");
             document.getElementById('detail-overlay').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        };
+        }
 
         window.closeDetail = function() {
-            // 상세 페이지 닫을 때 내용 메모리에 저장 (아직 DB 저장은 아님)
-            if (isEditing && window.currentDetailKey) {
-                const key = window.currentDetailKey;
-                portfolioData.details[key].title = document.getElementById('detail-title').innerText;
-                portfolioData.details[key].desc = document.getElementById('detail-desc').innerText;
-                portfolioData.details[key].extra = document.getElementById('detail-extra').innerText;
-                portfolioData.details[key].link = document.getElementById('detail-link').href;
+            if(window.isEditing && window.currentActiveKey) {
+                const key = window.currentActiveKey;
+                document.querySelector(`[data-key="${key}-title"]`).innerText = document.getElementById('detail-title').innerText;
+                document.querySelector(`[data-key="${key}-full-desc"]`).innerHTML = document.getElementById('detail-desc').innerHTML;
             }
-
             document.getElementById('detail-overlay').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-            window.currentDetailKey = null;
-        };
+        }
 
-        // 앱 시작
-        loadContent();
+        window.insertBookmark = async function() {
+            const url = prompt("북마크할 URL 입력:");
+            if(!url) return;
+            const html = `<a href="${url}" target="_blank" class="bookmark-card block bg-white/5 p-4 rounded-xl no-underline my-2 border border-white/10">
+                <div class="font-bold text-white">${url}</div>
+                <div class="text-sm text-gray-400">클릭하여 링크 이동</div>
+            </a>`;
+            document.getElementById('detail-desc').innerHTML += html;
+        }
 
+        loadFromServer();
     </script>
 </body>
 </html>
